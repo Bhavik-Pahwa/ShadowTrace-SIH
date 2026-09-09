@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ShadowTrace-XAI Dossier {{ tx_id }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111827; margin: 32px; }
+    header { border-bottom: 3px solid #111827; padding-bottom: 12px; margin-bottom: 24px; }
+    h1 { font-size: 24px; margin: 0; }
+    h2 { font-size: 16px; margin-top: 24px; border-bottom: 1px solid #d1d5db; padding-bottom: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
+    th { background: #f3f4f6; }
+    .hash { font-family: monospace; word-break: break-all; font-size: 11px; }
+    .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .box { border: 1px solid #d1d5db; padding: 10px; }
+    .visual-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 12px; page-break-inside: avoid; }
+    .graph-viz, .chart-viz { page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NTRO ShadowTrace-XAI Evidence Dossier</h1>
+    <p>Investigator: {{ investigator_id }} | Transaction: {{ tx_id }}</p>
+  </header>
+
+  <h2>Evidence Summary</h2>
+  <div class="summary">
+    <div class="box">Threat Score: <strong>{{ evidence.overall_threat_score }}</strong></div>
+    <div class="box">Risk Level: <strong>{{ alert.risk_level }}</strong></div>
+    <div class="box">Primary Anomaly: <strong>{{ alert.primary_anomaly }}</strong></div>
+    <div class="box">Timestamp: <strong>{{ alert.timestamp }}</strong></div>
+  </div>
+
+  <h2>Feature Attribution</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>Value</th><th>Contribution Percentage</th></tr></thead>
+    <tbody>
+      {% for item in evidence.xai_breakdown %}
+      <tr><td>{{ item.feature }}</td><td>{{ item.value }}</td><td>{{ item.contribution_percentage }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Explainability Visuals</h2>
+  <div class="visual-grid">
+    <div class="chart-viz">{{ xai_chart_svg }}</div>
+  </div>
+
+  <h2>Subgraph Visualization</h2>
+  <p>Nodes: {{ graph.nodes|length }} | Edges: {{ graph.edges|length }}</p>
+  <div class="graph-viz">{{ graph_svg }}</div>
+
+  <h2>Subgraph Metadata</h2>
+  {% if include_network_metadata %}
+  <h3>Nodes</h3>
+  <table>
+    <thead><tr><th>Node ID</th><th>Label</th><th>Type</th><th>Metadata</th></tr></thead>
+    <tbody>
+      {% for node in graph.nodes %}
+      <tr><td>{{ node.data.id }}</td><td>{{ node.data.label }}</td><td>{{ node.data.type }}</td><td>{{ node.data }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>Edges</h3>
+  <table>
+    <thead><tr><th>Source</th><th>Target</th><th>Relationship</th><th>Amount BTC</th><th>Timestamp</th><th>Metadata</th></tr></thead>
+    <tbody>
+      {% for edge in graph.edges %}
+      <tr>
+        <td>{{ edge.data.source }}</td>
+        <td>{{ edge.data.target }}</td>
+        <td>{{ edge.data.relationship }}</td>
+        <td>{{ edge.data.amount_btc|default("", true) }}</td>
+        <td>{{ edge.data.timestamp|default("", true) }}</td>
+        <td>{{ edge.data }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>Chain Of Custody</h2>
+  <p class="hash">{{ evidence.chain_of_custody_hash }}</p>
+</body>
+</html>

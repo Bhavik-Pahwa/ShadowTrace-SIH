@@ -1,0 +1,146 @@
+# ShadowTrace-XAI Backend Implementation Status
+
+## Implemented
+
+- FastAPI app with `/api/ingest`, `/api/alerts`, `/api/graph/{tx_id}`, `/api/evidence/{tx_id}`, `/api/generate-dossier`, and `/api/downloads/...`.
+- Exact success response shapes for the Section 5 API contract.
+- `/api/generate-dossier` rejects unexpected request fields and requires strict JSON strings/booleans so the request body stays limited to the PRD fields and stringified booleans are not accepted.
+- Standardized error response shape for endpoint failures and request validation failures.
+- Evidence and dossier endpoints distinguish unknown transactions from known transactions that were not flagged, while still returning the standardized error shape.
+- Multipart `/api/ingest` accepts CSV only, matching the Section 5 frontend contract.
+- Offline ingestion engine supports CSV, JSON, and newline-delimited JSON through `polars`, iterates rows without a full `to_dicts()` copy, and persists via `duckdb`.
+- Synthetic Elliptic augmentation for timestamps, Base58/Bech32 addresses, amounts, IPs, ports, Tor/bulletproof ASN signals, and semi-synthetic sample data.
+- Row and graph metadata include `data_provenance` so semi-synthetic ledger/network augmentation is explicit internally and in dossier graph metadata.
+- Elliptic-style `txId` input columns are supported.
+- Elliptic class `3` is normalized to `unknown`.
+- Unsupported supplied class labels are rejected instead of silently becoming `unknown`.
+- Supplied `time_step` values are validated as integers in the Elliptic 1-49 range.
+- Numeric Elliptic feature columns are summarized into internal model features.
+- Optional parent/source transaction columns are converted into synthetic spend links so uploaded graph topology reaches NetworkX and PyG.
+- Optional exchange wallet columns are represented inline as `WalletAddress` nodes with `type: "exchange"`.
+- Row-level ingest conversion errors are returned as standardized 400 `Malformed ingest file.` responses with row context.
+- Ingest rejects files with no recognized transaction columns instead of silently generating synthetic unknown transactions from arbitrary tabular input.
+- Supplied `src_ip`/`dst_ip`, `src_port`/`dst_port`, and timestamp fields are validated during ingestion; Unix epoch timestamps are normalized to UTC ISO strings before graph construction.
+- Ingest rejects mismatched address/amount array lengths instead of silently dropping values during graph edge construction.
+- Ingest rejects decimal or negative satoshi amounts instead of truncating or accepting invalid ledger values.
+- Ingest rejects duplicate transaction IDs before DuckDB insertion so rows cannot silently overwrite each other.
+- Synthetic amount generation for multi-output transactions preserves `sum(inputs) >= sum(outputs)`.
+- Local GeoIP enrichment through `geoip2` and local MaxMind file paths.
+- GeoIP reader handles are explicitly closed after ingestion row processing.
+- Partially opened GeoIP reader handles are closed if another MaxMind reader fails during setup.
+- NetworkX graph with `Transaction`, `WalletAddress`, `IPAddress`, and `ASN` nodes.
+- NetworkX edges for `SPENT`, `RECEIVED`, `BROADCAST_FROM`, and `BELONGS_TO`.
+- Required `amount_btc` and `timestamp` metadata on `SPENT` and `RECEIVED` edges.
+- `Transaction` nodes and `BROADCAST_FROM` edges embed network timing and port metadata (`timestamp`, `src_port`, `dst_ip`, `dst_port`).
+- Flagged `Transaction` nodes embed alert metadata (`threat_score`, `risk_level`, `primary_anomaly`) inline in `/api/graph/{tx_id}` responses.
+- Root transaction graph nodes expose the PRD example metadata keys `type: "hub"` and `risk` alongside `risk_level`.
+- N-hop graph payload node/edge ordering is deterministic for stable API rendering and custody hashes.
+- `/api/graph/{tx_id}` uses the configured server-side N-hop default of 4 rather than exposing an extra frontend contract parameter.
+- N-hop graph payloads retain terminal exchange wallet outputs for included transactions so peel-chain cashout context is not clipped.
+- Cold-start graph hydration from an existing DuckDB database rebuilds only the NetworkX graph, avoiding a model/XAI retrain on the first `/api/graph/{tx_id}` request.
+- CIOH entity clustering with `entity_id` metadata on wallet nodes.
+- Change-address detection using script-type continuity and decimal-pattern heuristics.
+- Address reuse (`Input = Output`) is tracked as an explicit heuristic signal even when the selected change-address candidate is a different output.
+- Peel-chain detection using 1-input/2-output topology, repeated small peel amounts, and `Delta t <= 25s`.
+- Fan-out detection for rapid splitting of one input into many outputs, including a 25-second linked-context window when parent/child timing is available.
+- Fan-in detection for rapid consolidation of many inputs into one or two outputs, including the same 25-second linked-context window when parent/child timing is available.
+- Terminal exchange wallet outputs are marked in heuristics and model features.
+- GCN model class using PyTorch Geometric `GCNConv`, with a validation split in the PyG code path.
+- `SHADOWTRACE_REQUIRE_PYG_EXTENSIONS=1` makes scoring fail fast when `torch_scatter` or `torch_sparse` is unavailable, so the final Linux target gate cannot accidentally pass through a development fallback path.
+- GCN artifacts retain validation metrics from the held-out split, and the latest run metrics are persisted in DuckDB for audit/write-up use after process exit.
+- PyG GCN edge index is built from transaction adjacency through shared wallet nodes.
+- GNNExplainer-derived reduced subgraphs are retained internally per alert, tagged with explanation provenance, persisted in DuckDB evidence rows, and reused for dossier visualization after API restarts while keeping `/api/graph/{tx_id}` as the full N-hop payload.
+- GNNExplainer fallback subgraphs are anchored on the requested root transaction so dossier visuals cannot drift to a different transaction when PyG explanation is unavailable.
+- Neighborhood features such as `neighbor_illicit_ratio` are computed through shared wallet adjacency, not just direct IP/address neighbors.
+- GCN training is seeded for reproducible demo scoring.
+- Local fallback scorer when compiled PyG extension wheels are unavailable.
+- Threat scores from 0 to 100 per transaction.
+- Alert ranking and real DuckDB pagination.
+- SHAP/TreeSHAP attribution path using a dataset-level RandomForest surrogate over current ingested rows, with deterministic fallback attribution if SHAP is unavailable or the dataset has only one class.
+- Evidence `contribution_percentage` values are normalized with largest-remainder allocation and checked programmatically so they sum exactly to `overall_threat_score`.
+- Terminal-exchange and Elliptic-derived SHAP features are converted to readable evidence labels.
+- Real SHA-256 `chain_of_custody_hash` over `tx_id`, timestamp, and localized subgraph JSON.
+- Contract tests recompute `chain_of_custody_hash` from the `/api/graph/{tx_id}` payload plus alert timestamp.
+- Reproducibility tests verify stored evidence hashes are computed from the current default graph payload.
+- Reproducibility tests verify graph payloads and custody hashes stay stable across a fresh pipeline rebuild.
+- Jinja2 + WeasyPrint dossier generation with agency header, evidence summary, feature attribution table, subgraph data, and custody hash.
+- Dossier feature attribution table is always included; `include_xai_visuals` only controls whether retained XAI graph evidence is used for the visualization.
+- Dossier template includes an embedded SVG subgraph visualization generated from the same inline graph payload.
+- Dossier SVG visualization centers the requested root transaction rather than the first transaction encountered in the N-hop graph.
+- Dossier template includes edge metadata when network metadata is requested, including source, target, relationship, amount, and timestamp columns.
+- `/api/downloads/{file_name}` serves generated PDF dossiers through explicit GET/HEAD routes with standardized 404 errors.
+- `/api/generate-dossier` returns an absolute server-local `file_path` plus the frontend-consumed `download_url`.
+- Dossier output filenames sanitize transaction IDs before writing inside the reports directory.
+- Local test-only PDF fallback is gated by `SHADOWTRACE_ALLOW_PDF_FALLBACK=1`; production/default execution surfaces WeasyPrint render failures instead of silently substituting another renderer.
+- One-command sample pipeline via `python scripts/run_pipeline.py --sample`.
+- Script and installed console pipeline entrypoints close their DuckDB connection before process exit.
+- Offline runtime verifier closes its DuckDB connection after the network-blocked sample pipeline check.
+- Offline verifier via `python scripts/verify_offline.py`.
+- Strict verifier via `python scripts/verify_offline.py --strict`.
+- Offline verifier opens MaxMind `.mmdb` files with `geoip2.database.Reader` and checks metadata, so corrupt placeholder files do not satisfy target readiness.
+- `SHADOWTRACE_REQUIRE_GEOIP=1` makes GeoIP enrichment fail fast when either required MaxMind database is missing; `verify_linux_target.sh` exports it for final target rehearsal.
+- Strict verifier flags interpreters outside Python 3.10-3.12 to match the pinned PyTorch/PyG wheel stack.
+- Offline verifier inspects the wheelhouse for all directly pinned install/verification wheel names, versions, and wheel compatibility tags, including `torch_scatter==2.1.2`, `torch_sparse==0.6.18`, `pytest==8.3.5`, and `httpx==0.28.1`, rather than accepting any same-name or wrong-platform wheel file.
+- Offline verifier and wheelhouse builder run an offline `pip install --dry-run --ignore-installed --no-index --find-links wheelhouse` resolver check for both requirement files, so missing transitive dependency wheels are caught before the target goes air-gapped without relying on packages already installed in the verifier environment.
+- Offline verifier accepts PyG wheel local-version tags such as `+pt25cpu` while still requiring the pinned public `torch_scatter`/`torch_sparse` versions.
+- Offline wheelhouse builder runs the verifier against the completed `wheelhouse/` before reporting success.
+- Offline verifier times a real WeasyPrint render and flags dossier rendering over the 2-second target.
+- Offline verifier runtime mode via `python scripts/verify_offline.py --runtime` runs the sample pipeline with raw sockets, connection helpers, and DNS helpers blocked.
+- Offline verifier runtime dossier mode via `python scripts/verify_offline.py --runtime --runtime-dossier` generates a dossier PDF while raw sockets, connection helpers, and DNS helpers are blocked.
+- `--runtime-dossier` implies runtime execution so dossier verification cannot be accidentally skipped by omitting `--runtime`.
+- Linux target verification fails fast if NetworkManager is available and `nmcli networking` does not report `disabled`, matching the PRD's target rehearsal expectation before running the deeper route/socket/API checks.
+- Strict Linux verification checks `/proc/net/route` and flags a non-loopback default route so final target rehearsal proves networking is disabled.
+- Linux Dockerfile with WeasyPrint native libraries and offline Python wheel installation from `/app/wheelhouse`, including pinned PyG extension wheels from `requirements-pyg-extensions.txt`.
+- Dockerfile Python package installation does not run `pip install --upgrade pip`; requirements install only with `--no-index --find-links /app/wheelhouse`.
+- Dockerfile installs the local package with `pip install --no-build-isolation --no-deps .` after copying source so console commands exist inside the container without dependency resolution.
+- `.dockerignore` excludes generated DuckDB files, reports, caches, editable-install metadata, and ZIP archives from Docker build contexts while keeping required offline target assets such as `wheelhouse/` and `data/geoip/*.mmdb` available to the Dockerfile.
+- Offline wheelhouse builder script and `shadowtrace-build-wheelhouse` console entrypoint download binary wheels only, use `requirements-pyg-extensions.txt` for `torch-scatter==2.1.2` and `torch-sparse==0.6.18`, and refuse to run unless they are on Linux with Python 3.10-3.12.
+- Packaged wheelhouse and release-bundle builders support explicit `--root`; installed commands default to the current working directory when it looks like the backend root, while source wrappers pass the checked-out backend root explicitly.
+- Source builder wrappers recognize both `--root PATH` and `--root=PATH` before appending their checked-out backend root.
+- Make targets: `make install-offline`, `make sample`, `make test`, `make audit-artifacts`, `make verify`, `make verify-strict`, `make verify-linux-target`, `make run`, `make wheelhouse`, `make bundle-offline`, and `make verify-bundle`.
+- `make install-offline` installs dependencies from `wheelhouse/` and then installs the local package with `--no-build-isolation --no-deps -e .`, so offline target environments get the console commands without network dependency resolution.
+- Linux target verification script requires disabled NetworkManager networking when `nmcli` is available, strict PyG extension availability, strict offline checks, network-blocked sample pipeline execution, network-blocked dossier generation, artifact auditing, and then starts the FastAPI server on loopback for the live API smoke test.
+- Linux target verification uses `SHADOWTRACE_VERIFY_PORT` with a default of `8000`, checks that the uvicorn process it started is still alive during readiness polling, and fails if the server never becomes ready.
+- Offline release-bundle builder script and `shadowtrace-build-bundle` console entrypoint validate readable MaxMind databases, compatible wheelhouse contents, and offline pip resolver completeness before creating a handoff ZIP; generated DuckDB data, reports, caches, and editable-install metadata are excluded, `.dockerignore` is included, and `BUNDLE_MANIFEST.json` records SHA-256 hashes and byte sizes for every packaged file.
+- Release-bundle validation derives `data/geoip/GeoLite2-City.mmdb` and `data/geoip/GeoLite2-ASN.mmdb` from the supplied backend `--root`, so installed `shadowtrace-build-bundle --root ...` checks the requested project rather than the package installation directory.
+- Release-bundle validation reports missing GeoIP files once and skips readability checks until both files are present, keeping target-prep failures concise.
+- Bundle manifest verifier script and `shadowtrace-verify-bundle` console entrypoint check transferred ZIPs for a readable `BUNDLE_MANIFEST.json`, required target artifacts, file-size matches, and SHA-256 matches.
+- `PRD_IMPLEMENTATION_CHECKLIST.md` preserves the source PRD-derived checklist as a repo artifact and is included in release bundles alongside the compliance audit.
+- `pyproject.toml` defines package metadata and console scripts for `shadowtrace-pipeline`, `shadowtrace-verify-offline`, `shadowtrace-artifact-audit`, `shadowtrace-verify-bundle`, `shadowtrace-build-bundle`, and `shadowtrace-build-wheelhouse`.
+- Live API smoke script checks alert pagination, all graph node/edge types, inline transaction and network metadata, graph root `type`/`risk`, evidence sum/hash recomputation, exact evidence keys, absolute dossier `file_path`, dossier generation, PDF download, and standardized 404 errors.
+- Compatibility endpoints `/api/investigate/{tx_id}` and `/api/feedback` support the team GraphSAGE prototype contract, loading `../ML MODEL FOR SIH/src/shadowtrace.pt` and local model outputs when possible and recording investigator feedback in SQLite.
+- Stored artifact audit script and `shadowtrace-artifact-audit` console entrypoint check every current alert for full graph node/edge metadata, exact evidence contribution sums, alert/evidence score parity, and custody hash recomputation from the default graph payload.
+- Contract tests for ingest, alert, graph, evidence, error, validation, dossier, heuristic, and network-blocked offline runtime behavior.
+- DuckDB connection is closed on FastAPI shutdown to reduce demo rerun file-lock issues.
+- `PRD_COMPLIANCE_AUDIT.md` maps PRD requirements to implementation evidence and unresolved target risks.
+
+## Verified On This Machine
+
+- `python backend/scripts/run_pipeline.py --sample` processed 90 rows and generated 39 alerts.
+- `python -m pytest backend/tests/test_contracts.py` passed 26 tests, including retained GNNExplainer subgraph artifacts for alert dossiers, default graph-depth peel-chain/exchange-wallet coverage, no extra public query contract on `/api/graph/{tx_id}`, exact dossier request validation with strict JSON string/boolean types, standardized missing-download errors, empty CSV upload errors, and unflagged-transaction evidence/dossier errors.
+- `python -m pytest backend/tests` passed 118 tests, including full graph IP/ASN/exchange/port/timing/alert/provenance metadata, custody-hash recomputation from localized graph JSON, stored evidence hash/default graph payload parity, retained and persisted GNNExplainer subgraph artifacts, root-anchored and network-scoped XAI fallback subgraphs, robust XAI contribution normalization, root-anchored dossier SVG visualization, dossier edge metadata, always-present dossier feature attribution, network-blocked dossier generation coverage, broader network-entrypoint blocking coverage, runtime package static no-network guardrails, runtime-dossier implication coverage, sanitized dossier filenames, exact dossier request validation, exact graph endpoint query contract, default N=4 peel-chain/exchange-wallet coverage, standardized download errors including non-PDF and path-traversal download requests, framework-level unknown API route errors, empty CSV upload errors, unflagged-transaction evidence/dossier errors, Elliptic-style JSON object/array and CSV parent-link ingestion, Elliptic class-3 unknown mapping, unsupported class-label rejection, row-iterator ingestion without a full `to_dicts()` copy, address/amount length validation, exact large integer satoshi preservation, decimal/negative satoshi rejection, duplicate transaction ID rejection, malformed-header validation, time-step range validation, supplied IP/port/timestamp validation, Unix epoch timestamp normalization, multi-output synthetic amount conservation, row-level malformed ingest errors, GeoIP reader cleanup, strict missing-GeoIP target mode, partial GeoIP setup cleanup, explicit address-reuse heuristic detection, single-output payment transactions left unmarked by change-address detection, wallet role preservation for reused change and exchange outputs, shared-wallet neighborhood risk, rapid fan-pattern timing checks, deterministic equal-timestamp DuckDB transaction rehydration, cross-rebuild graph/hash stability, package template parity, target wheelhouse guardrails, PyG local-version wheel tag verification, wrong-platform wheel rejection, direct pinned requirement wheelhouse parity, offline pip resolver checks for transitive wheel completeness, wheelhouse builder post-download validation, packaged wheelhouse/release-bundle root resolution, release-bundle root-derived GeoIP validation, concise release-bundle missing-GeoIP reporting, shared PyG extension requirements coverage, offline Docker wheel installation, Docker context hygiene, offline Makefile install target coverage, offline release-bundle guardrails, manifest integrity verification, explicit wheelhouse contents verification, MaxMind readability verification, packaged artifact-audit console command, CLI, artifact-audit, and verifier DuckDB connection cleanup, strict Linux default-route detection, strict Python-range verification, WeasyPrint render-time threshold verification, GCN combined illicit/anomalous probability scoring, cold DuckDB graph hydration, terminal exchange wallet marking, persisted latest model metrics, and held-out GCN validation metrics.
+- `python backend/scripts/verify_offline.py` completed without opening sockets during the verifier.
+- `python backend/scripts/verify_offline.py --runtime` completed and reported `OK offline pipeline rows=90 alerts=39`.
+- `python backend/scripts/audit_prd_artifacts.py` completed with `status=success`, `transactions=90`, and `alerts_audited=39`.
+- `python -m pytest backend/tests/test_offline_runtime.py -q` passed 34 tests after Docker context hygiene coverage was added.
+- `python backend/scripts/verify_bundle_manifest.py backend/shadowtrace-xai-source-check.zip` correctly failed for a source-only `--skip-validation` archive because required target artifacts were absent.
+- `python backend/scripts/build_release_bundle.py` failed as expected on this host because MaxMind `.mmdb` files and the target wheelhouse are missing.
+- `python backend/scripts/build_release_bundle.py --skip-validation --output shadowtrace-xai-source-check.zip` created a source-only mechanics check archive; inspected contents included `.dockerignore`, excluded generated DuckDB data, reports, caches, and editable-install metadata, and release-bundle tests now require `PRD_IMPLEMENTATION_CHECKLIST.md`, then the temporary ZIP was removed.
+- With `SHADOWTRACE_ALLOW_PDF_FALLBACK=1` on this Windows host, `python backend/scripts/verify_offline.py --runtime --runtime-dossier` generated a dossier PDF while runtime network entry points were blocked.
+- `python backend/scripts/verify_offline.py --strict` fails, as expected, because target risks are unresolved on this machine.
+- `pip install -e backend --no-deps` is intentionally rejected on this Python 3.14 host after the project metadata was constrained to Python 3.10-3.12.
+- Local imports verified: FastAPI, uvicorn, polars, DuckDB, NetworkX, geoip2, torch, torch_geometric, Jinja2, WeasyPrint, SHAP.
+- Local PyTorch Geometric `GCNConv` execution was verified on a small tensor graph.
+- Live API checks confirmed alert pagination response, full inline graph node/edge metadata, standardized unknown graph error, evidence contribution sum/hash length, dossier generation, and explicit PDF download serving.
+- `python backend/scripts/smoke_api.py --base-url http://127.0.0.1:8000` passed against a running local server with prebuilt sample data after cold-start graph hydration and persisted XAI subgraph storage. This Windows smoke run used `SHADOWTRACE_ALLOW_PDF_FALLBACK=1` because native WeasyPrint libraries are unavailable on this host.
+- `make verify-linux-target` is present for the final Linux/offline gate, but cannot be completed on this Windows/Python 3.14 host.
+
+## Open Risks To Resolve On Target Linux
+
+- `torch_scatter` and `torch_sparse` did not install here from normal pip resolution; `torch-scatter` attempted a source build. The target offline Linux machine still needs a pre-downloaded wheelhouse with wheels matching Python, OS, Torch, and CPU/CUDA. `requirements-pyg-extensions.txt` centralizes the pins, and `scripts/build_offline_wheelhouse.py` now refuses mismatched hosts and downloads binary wheels only.
+- Current verification host is Windows with Python 3.14, while this backend target stack is offline Linux with Python 3.10-3.12.
+- `pyproject.toml` constrains package installs to Python 3.10-3.12 because the pinned PyTorch/PyG wheel stack is not reliably available on newer interpreters.
+- Local MaxMind files are not present at `backend/data/geoip/GeoLite2-City.mmdb` and `backend/data/geoip/GeoLite2-ASN.mmdb`; synthetic ASN/country fallback is used until those files are placed there.
+- WeasyPrint imports on this Windows host but native rendering failed because `libgobject-2.0-0` is unavailable; the Dockerfile installs Linux native libraries required for target verification. In production/default execution this is a real failure, not a silent fallback.
+- Docker CLI is installed, but Docker Desktop's Linux engine was not running, so the Linux container build could not be completed from this session.
+- `bash -n scripts/verify_linux_target.sh` could not run on this Windows host because WSL has no usable `/bin/bash`; shell execution remains part of the target Linux gate.

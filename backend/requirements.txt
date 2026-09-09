@@ -1,0 +1,18 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+polars==1.32.3
+duckdb==1.3.2
+networkx==3.4.2
+geoip2==5.1.0
+jinja2==3.1.6
+weasyprint==66.0
+numpy==2.1.3
+scikit-learn==1.6.1
+shap==0.46.0
+torch==2.5.1
+torch-geometric==2.6.1
+pytest==8.3.5
+httpx==0.28.1
+# Install torch-scatter/torch-sparse from an offline wheelhouse matching
+# torch==2.5.1, Python 3.10-3.12, Linux, and CPU/CUDA target before air-gapping.

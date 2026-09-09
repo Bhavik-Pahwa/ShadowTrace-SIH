@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+.DS_Store
+.env
+.env.*
+
+backend/.pytest_cache/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/*.egg-info/
+backend/shadowtrace_xai_backend.egg-info/
+backend/wheelhouse/
+backend/*.zip
+backend/reports/dossier_visual_check.png
+
+ML MODEL FOR SIH/__MACOSX/
+ML MODEL FOR SIH/src/elliptic_bitcoin_dataset/elliptic_txs_features.csv
+ML MODEL FOR SIH/src/outputs/nodes.csv
