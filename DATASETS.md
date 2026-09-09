@@ -6,13 +6,14 @@ GitHub Release assets instead.
 
 ## Release Asset Links
 
-- `elliptic_txs_features.csv`: to be uploaded to the `datasets-v1` release
-- `nodes.csv`: to be uploaded to the `datasets-v1` release
+- `elliptic_txs_features.csv`:
+  `https://github.com/Bhavik-Pahwa/ShadowTrace-SIH/releases/download/datasets-v1/elliptic_txs_features.csv`
+- `nodes.csv`:
+  `https://github.com/Bhavik-Pahwa/ShadowTrace-SIH/releases/download/datasets-v1/nodes.csv`
 
-After upload, the assets will be available at:
+Release page:
 
-- `https://github.com/Bhavik-Pahwa/ShadowTrace-SIH/releases/download/datasets-v1/elliptic_txs_features.csv`
-- `https://github.com/Bhavik-Pahwa/ShadowTrace-SIH/releases/download/datasets-v1/nodes.csv`
+`https://github.com/Bhavik-Pahwa/ShadowTrace-SIH/releases/tag/datasets-v1`
 
 ## Local Restore Paths
 
