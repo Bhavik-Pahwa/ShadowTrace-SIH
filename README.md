@@ -5,32 +5,30 @@ for Smart India Hackathon 2026. It helps investigators ingest transaction data,
 detect suspicious flows, inspect graph evidence, and export court-ready dossiers
 with a cryptographic chain of custody.
 
-## SIH Details
+## 1. Project Information
 
-| Field | Value |
-| --- | --- |
-| Problem Statement ID | SIH26146 |
-| Problem Statement Title | AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic |
-| Theme | Blockchain & Cybersecurity |
-| Category | Software |
-| Team Name | LocalDost |
-| Project Name | ShadowTrace-XAI |
+- **Project Title:** ShadowTrace-XAI
+- **PS ID:** SIH26146
+- **PS Title:** AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic
+- **Category:** Software
+- **Theme:** Blockchain & Cybersecurity
+- **Team Name:** LocalDost
 
-## Problem
+## 2. Problem Statement
 
 Illicit cryptocurrency flows move quickly through peel chains, exchange
 cash-outs, darknet wallets, ransomware clusters, and other multi-hop patterns.
 Manual blockchain review is slow, expensive, and difficult to explain in a way
 that supports regulatory action or legal review.
 
-## Proposed Solution
+## 3. Proposed Solution
 
 ShadowTrace-XAI combines graph analytics, machine learning, explainable AI, and
 local evidence generation. The system builds a transaction graph, scores risky
 transactions, shows the surrounding money movement and network metadata, and
 generates a PDF dossier that preserves the evidence trail.
 
-## Key Features
+## 4. Key Features
 
 - CSV/JSON transaction ingestion with validation and enrichment.
 - Wallet, transaction, IP, ASN, exchange, peel-chain, and timing graph signals.
@@ -42,79 +40,121 @@ generates a PDF dossier that preserves the evidence trail.
 - SHA-256 custody hashes and WeasyPrint dossier exports for review.
 - Compatibility endpoints for the team ML prototype and feedback loop.
 
-## Technology Stack
+## 5. Technology Stack
 
-| Layer | Technologies |
-| --- | --- |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, Cytoscape-ready graph UX |
-| Backend | Python, FastAPI, DuckDB, SQLite, Polars, WeasyPrint |
-| ML/XAI | PyTorch, PyTorch Geometric, GCN, GraphSAGE, GNNExplainer-style outputs |
-| Data | Elliptic Bitcoin dataset format, MaxMind GeoIP local databases |
-| Tooling | pytest, Makefile, offline wheelhouse/release-bundle scripts |
+| Layer    | Technologies                                                           |
+| -------- | ---------------------------------------------------------------------- |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, Cytoscape-ready graph UX        |
+| Backend  | Python, FastAPI, DuckDB, SQLite, Polars, WeasyPrint                    |
+| ML/XAI   | PyTorch, PyTorch Geometric, GCN, GraphSAGE, GNNExplainer-style outputs |
+| Data     | Elliptic Bitcoin dataset format, MaxMind GeoIP local databases         |
+| Tooling  | pytest, Makefile, offline wheelhouse/release-bundle scripts            |
 
-## Repository Structure
+## 6. Architecture
+
+See [docs/architecture.md](docs/architecture.md).
+
+```text
+Investigator
+  |
+  v
+React Dashboard
+  |
+  v
+FastAPI Backend
+  |
+  +--> DuckDB / SQLite Evidence Stores
+  |
+  +--> Graph Builder + Heuristics
+  |
+  +--> GCN / GraphSAGE Model
+  |
+  +--> XAI Evidence + Custody Hash
+  |
+  v
+PDF Dossier / Alert Review Output
+```
+
+## 7. Repository Structure
 
 ```text
 ShadowTrace-SIH/
-├── README.md
-├── SUBMISSION_GUIDE.md
-├── backend/
-├── docs/
-├── frontend/
-├── ml-model/
-└── submission/
+|-- README.md
+|-- assets/
+|   `-- screenshots/
+|-- backend/
+|-- docs/
+|-- frontend/
+|-- ml-model/
+`-- submission/
 ```
 
-- `frontend/` contains the Vite React investigator dashboard.
-- `backend/` contains the FastAPI forensic API, tests, offline verification,
-  dossier generation, and release tooling.
-- `ml-model/` contains the team GraphSAGE prototype and model assets.
-- `docs/` contains dataset restore notes.
-- `submission/` contains SIH presentation/demo submission references.
+### What Goes Where?
 
-## Setup And Run
+| Item                                   | Location              |
+| -------------------------------------- | --------------------- |
+| Frontend source code                   | `frontend/`           |
+| Backend source code                    | `backend/`            |
+| ML prototype and model assets          | `ml-model/`           |
+| Architecture and dataset documentation | `docs/`               |
+| Project screenshots / prototype photos | `assets/screenshots/` |
+| Final presentation and demo links      | `submission/`         |
+| Project overview                       | `README.md`           |
 
-### 1. Frontend
+## 8. Final Presentation
+
+- `submission/LocalDost_SIH2026_Presentation.pdf`
+
+## 9. Demo Video
+
+- `submission/DEMO.md`
+
+## 10. Screenshots / Prototype Photos
+
+- `assets/screenshots/`
+
+## 11. Installation
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
+```
+
+### Backend
+
+```bash
+cd backend
+python -m venv .venv
+python -m pip install -r requirements.txt
+```
+
+For final offline Linux setup, follow the stricter instructions in
+`backend/README.md`, including wheelhouse and MaxMind GeoIP database
+requirements.
+
+## 12. Run
+
+Start the backend API:
+
+```bash
+cd backend
+python scripts/run_pipeline.py --sample
+python -m uvicorn shadowtrace.main:app --host 127.0.0.1 --port 8000
+```
+
+Start the frontend dashboard in another terminal:
+
+```bash
+cd frontend
 npm run dev
 ```
 
 The dashboard runs at `http://127.0.0.1:5173/` and proxies `/api` requests to
 the backend at `http://127.0.0.1:8000`.
 
-### 2. Backend
-
-```bash
-cd backend
-python -m venv .venv
-python -m pip install -r requirements.txt
-python scripts/run_pipeline.py --sample
-python -m uvicorn shadowtrace.main:app --host 127.0.0.1 --port 8000
-```
-
-For the final offline Linux target, follow the stricter setup in
-`backend/README.md`, including the local wheelhouse and MaxMind GeoIP database
-requirements.
-
-### 3. ML Prototype Assets
-
-The backend defaults to the model bundle at `ml-model/src`. To use another model
-folder, set:
-
-```bash
-set SHADOWTRACE_TEAM_MODEL_ROOT=path\to\model\src
-```
-
-On Linux/macOS:
-
-```bash
-export SHADOWTRACE_TEAM_MODEL_ROOT=/path/to/model/src
-```
-
-## Output
+## 13. Output
 
 The reviewer can inspect:
 
@@ -124,45 +164,18 @@ The reviewer can inspect:
 - Investigator feedback recording.
 - Downloadable evidence dossiers with custody hashes.
 
-## Dataset Assets
+## 14. Dataset Assets
 
 Two large CSV assets are stored as GitHub Release assets instead of normal Git
-files. Restore instructions are in `docs/DATASETS.md`.
+files. Restore instructions are in [docs/DATASETS.md](docs/DATASETS.md).
 
-## Team
+## 15. Team Members
 
 Team name: LocalDost
 
-| Member | Role |
-| --- | --- |
-| Add member name | ML model and XAI pipeline |
-| Add member name | Backend API and evidence pipeline |
-| Add member name | Frontend dashboard and UX |
+| Member          | Role                                      |
+| --------------- | ----------------------------------------- |
+| Add member name | ML model and XAI pipeline                 |
+| Add member name | Backend API and evidence pipeline         |
+| Add member name | Frontend dashboard and UX                 |
 | Add member name | Dataset, testing, documentation, and demo |
-
-Update this table with final member names before sharing the repository link.
-
-## Submission Artifacts
-
-- Presentation: `submission/LocalDost_SIH2026_Presentation.pdf`
-- Presentation note: `submission/PRESENTATION.md`
-- Demo note: `submission/DEMO.md`
-- Submission checklist: `SUBMISSION_GUIDE.md`
-
-## Verification
-
-Useful local checks:
-
-```bash
-cd frontend
-npm run build
-```
-
-```bash
-python -m pytest backend/tests/test_contracts.py -q
-```
-
-## Security Note
-
-Do not commit passwords, API keys, access tokens, private credentials, or `.env`
-files containing secrets.
