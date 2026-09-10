@@ -111,7 +111,27 @@ ShadowTrace-SIH/
 
 ## 10. Screenshots / Prototype Photos
 
-- `assets/screenshots/`
+### Home & Data Ingestion
+
+| Home | Data Ingestion |
+| :---: | :---: |
+| ![Home](assets/screenshots/01-home.png) | ![Data Ingestion](assets/screenshots/02-ingest.png) |
+
+### Alerts & Graph Investigation
+
+| Alerts | Transaction Graph |
+| :---: | :---: |
+| ![Alerts](assets/screenshots/03-alerts.png) | ![Transaction Graph](assets/screenshots/04-graph.png) |
+
+### Analytics & Forensic Dossier
+
+| Analytics | Forensic Dossier |
+| :---: | :---: |
+| ![Analytics](assets/screenshots/05-analytics.png) | ![Forensic Dossier](assets/screenshots/06-dossier.png) |
+
+### Human-in-the-Loop Feedback
+
+![Human-in-the-Loop Feedback](assets/screenshots/07-feedback.png)
 
 ## 11. Installation
 
