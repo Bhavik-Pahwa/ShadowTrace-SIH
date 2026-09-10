@@ -110,7 +110,7 @@ allowing a development fallback path to mask a broken offline PyG install.
 ## Team ML Prototype Endpoints
 
 The backend also exposes compatibility endpoints for the team GraphSAGE model
-folder at `../ML MODEL FOR SIH/src`, or another folder supplied through
+folder at `../ml-model/src`, or another folder supplied through
 `SHADOWTRACE_TEAM_MODEL_ROOT`:
 
 ```text

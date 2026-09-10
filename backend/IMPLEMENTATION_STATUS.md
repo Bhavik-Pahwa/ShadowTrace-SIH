@@ -108,7 +108,7 @@
 - `PRD_IMPLEMENTATION_CHECKLIST.md` preserves the source PRD-derived checklist as a repo artifact and is included in release bundles alongside the compliance audit.
 - `pyproject.toml` defines package metadata and console scripts for `shadowtrace-pipeline`, `shadowtrace-verify-offline`, `shadowtrace-artifact-audit`, `shadowtrace-verify-bundle`, `shadowtrace-build-bundle`, and `shadowtrace-build-wheelhouse`.
 - Live API smoke script checks alert pagination, all graph node/edge types, inline transaction and network metadata, graph root `type`/`risk`, evidence sum/hash recomputation, exact evidence keys, absolute dossier `file_path`, dossier generation, PDF download, and standardized 404 errors.
-- Compatibility endpoints `/api/investigate/{tx_id}` and `/api/feedback` support the team GraphSAGE prototype contract, loading `../ML MODEL FOR SIH/src/shadowtrace.pt` and local model outputs when possible and recording investigator feedback in SQLite.
+- Compatibility endpoints `/api/investigate/{tx_id}` and `/api/feedback` support the team GraphSAGE prototype contract, loading `../ml-model/src/shadowtrace.pt` and local model outputs when possible and recording investigator feedback in SQLite.
 - Stored artifact audit script and `shadowtrace-artifact-audit` console entrypoint check every current alert for full graph node/edge metadata, exact evidence contribution sums, alert/evidence score parity, and custody hash recomputation from the default graph payload.
 - Contract tests for ingest, alert, graph, evidence, error, validation, dossier, heuristic, and network-blocked offline runtime behavior.
 - DuckDB connection is closed on FastAPI shutdown to reduce demo rerun file-lock issues.

@@ -19,11 +19,11 @@ Release page:
 
 Place downloaded files back at these paths:
 
-- `ML MODEL FOR SIH/src/elliptic_bitcoin_dataset/elliptic_txs_features.csv`
-- `ML MODEL FOR SIH/src/outputs/nodes.csv`
+- `ml-model/src/elliptic_bitcoin_dataset/elliptic_txs_features.csv`
+- `ml-model/src/outputs/nodes.csv`
 
 The smaller CSV assets remain tracked in git:
 
-- `ML MODEL FOR SIH/src/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv`
-- `ML MODEL FOR SIH/src/elliptic_bitcoin_dataset/elliptic_txs_classes.csv`
-- `ML MODEL FOR SIH/src/outputs/edges.csv`
+- `ml-model/src/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv`
+- `ml-model/src/elliptic_bitcoin_dataset/elliptic_txs_classes.csv`
+- `ml-model/src/outputs/edges.csv`

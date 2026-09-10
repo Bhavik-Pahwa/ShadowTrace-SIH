@@ -1,5 +1,7 @@
 node_modules/
+frontend/node_modules/
 dist/
+frontend/dist/
 .pytest_cache/
 __pycache__/
 *.py[cod]
@@ -19,6 +21,6 @@ backend/wheelhouse/
 backend/*.zip
 backend/reports/dossier_visual_check.png
 
-ML MODEL FOR SIH/__MACOSX/
-ML MODEL FOR SIH/src/elliptic_bitcoin_dataset/elliptic_txs_features.csv
-ML MODEL FOR SIH/src/outputs/nodes.csv
+ml-model/__MACOSX/
+ml-model/src/elliptic_bitcoin_dataset/elliptic_txs_features.csv
+ml-model/src/outputs/nodes.csv

@@ -13,7 +13,7 @@ import polars as pl
 from .config import BASE_DIR
 
 
-TEAM_MODEL_ROOT = Path(os.environ.get("SHADOWTRACE_TEAM_MODEL_ROOT", BASE_DIR.parent / "ML MODEL FOR SIH" / "src"))
+TEAM_MODEL_ROOT = Path(os.environ.get("SHADOWTRACE_TEAM_MODEL_ROOT", BASE_DIR.parent / "ml-model" / "src"))
 TEAM_MODEL_WEIGHTS = Path(os.environ.get("SHADOWTRACE_TEAM_MODEL_WEIGHTS", TEAM_MODEL_ROOT / "shadowtrace.pt"))
 TEAM_MODEL_NODES = Path(os.environ.get("SHADOWTRACE_TEAM_MODEL_NODES", TEAM_MODEL_ROOT / "outputs" / "nodes.csv"))
 TEAM_MODEL_EDGES = Path(os.environ.get("SHADOWTRACE_TEAM_MODEL_EDGES", TEAM_MODEL_ROOT / "outputs" / "edges.csv"))
