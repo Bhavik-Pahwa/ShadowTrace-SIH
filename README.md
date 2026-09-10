@@ -168,14 +168,3 @@ The reviewer can inspect:
 
 Two large CSV assets are stored as GitHub Release assets instead of normal Git
 files. Restore instructions are in [docs/DATASETS.md](docs/DATASETS.md).
-
-## 15. Team Members
-
-Team name: LocalDost
-
-| Member          | Role                                      |
-| --------------- | ----------------------------------------- |
-| Add member name | ML model and XAI pipeline                 |
-| Add member name | Backend API and evidence pipeline         |
-| Add member name | Frontend dashboard and UX                 |
-| Add member name | Dataset, testing, documentation, and demo |
